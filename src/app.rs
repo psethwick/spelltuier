@@ -18,7 +18,7 @@ struct Cell {
 pub struct App {
     running: bool,
     input: String,
-    board: Vec<Vec<Cell>>,
+    board: Vec<Vec<String>>,
 }
 
 // TODO this should all be config or option
@@ -36,15 +36,15 @@ impl App {
         // let c = letter_bag.choose_mut(&mut rng).unwrap();
         // generate right number of rows, columns
         // maybe the config should include distribution? idk, maybe the simple bag is fine
-        let board = vec![
-            vec!['b'.to_string(), 'b'.to_string()],
+        let board: Vec<Vec<String>> = vec![
+            vec!["b".to_string(), 'b'.to_string()],
             vec!['A'.to_string(), 'A'.to_string()],
         ];
 
-        let rows: Vec<_> = <Vec<Vec<String>> as Clone>::clone(&self.board)
-            .into_iter()
-            .map(|r| Row::new(r))
-            .collect();
+        // let rows: Vec<_> = board
+        //     .into_iter()
+        //     .map(|r| Row::new(r.iter().map(|c| c.to_string())))
+        //     .collect();
 
         Self {
             input: String::new(),
@@ -77,14 +77,11 @@ impl App {
         let text = "Hello, Ratatui!\n\n\
             Created using https://github.com/ratatui/templates\n\
             Press `Esc`, `Ctrl-C` or `q` to stop running.";
-        let rows = self
-            .board
+        let rows: Vec<Line> = <Vec<Vec<String>> as Clone>::clone(&self.board)
             .into_iter()
-            .map(|r| Row::new(r.to_owned()))
+            .map(|r| Line::from_iter(r))
             .collect();
-        // frame.render_widget(
-        //     Table::new(rows, widths)
-        // )
+        frame.render_widget(Paragraph::new(rows), frame.area())
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
