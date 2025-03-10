@@ -1,14 +1,9 @@
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use rand::seq::IndexedMutRandom;
-use ratatui::{
-    style::Stylize,
-    text::Line,
-    widgets::{Block, Paragraph, Row, Table},
-    DefaultTerminal, Frame,
-};
+use rand::seq::SliceRandom;
+use ratatui::{text::Line, widgets::Paragraph, DefaultTerminal, Frame};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Cell {
     letter: Option<u8>,
     selected: bool,
@@ -23,28 +18,24 @@ pub struct App {
 
 // TODO this should all be config or option
 const BAG: &str = "AAAAAAAAABBCCDDDDEEEEEEEEEEEEFFGGGHHIIIIIIIIIJKLLLLMMNNNNNNOOOOOOOOPPQRRRRRRSSSSTTTTTTUUUUVVWWXYYZ";
-const ROWS: i32 = 13;
-const COLS: i32 = 9;
+const ROWS: usize = 10; // TODO: 13 again, but need a bigger bag
+const COLS: usize = 9;
 
 impl App {
-    /// Construct a new instance of [`App`].
     pub fn new() -> Self {
-        // TODO: finish this
-        // let mut rng = rand::rng();
-        // let mut letter_bag = Vec::from(BAG);
-        // let mut board = Vec::new();
-        // let c = letter_bag.choose_mut(&mut rng).unwrap();
-        // generate right number of rows, columns
-        // maybe the config should include distribution? idk, maybe the simple bag is fine
-        let board: Vec<Vec<String>> = vec![
-            vec!["b".to_string(), 'b'.to_string()],
-            vec!['A'.to_string(), 'A'.to_string()],
-        ];
-
-        // let rows: Vec<_> = board
-        //     .into_iter()
-        //     .map(|r| Row::new(r.iter().map(|c| c.to_string())))
-        //     .collect();
+        let mut rng = rand::rng();
+        let mut letter_bag = Vec::from(BAG);
+        letter_bag.shuffle(&mut rng);
+        let board: Vec<Vec<String>> = letter_bag
+            .chunks(COLS)
+            .take(ROWS)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .map(|&byte| String::from_utf8(vec![byte]).unwrap_or_default())
+                    .collect()
+            })
+            .collect();
 
         Self {
             input: String::new(),
@@ -70,9 +61,10 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/main/ratatui-widgets/examples>
     fn render(&mut self, frame: &mut Frame) {
-        let rows: Vec<Line> = <Vec<Vec<String>> as Clone>::clone(&self.board)
-            .into_iter()
-            .map(|r| Line::from_iter(r))
+        let rows: Vec<Line> = self
+            .board
+            .iter()
+            .map(|r| Line::from_iter(r.iter().cloned()))
             .collect();
         frame.render_widget(Paragraph::new(rows), frame.area())
     }
